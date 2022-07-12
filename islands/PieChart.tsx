@@ -3,15 +3,16 @@ import { h } from "preact"
 import { useEffect, useRef } from 'preact/hooks'
 import {select} from "https://esm.sh/d3-selection@3"
 import { pie, arc } from "https://esm.sh/d3-shape@3"
-import {map, range, InternSet} from "https://esm.sh/d3-array@3"
+import { range, InternSet} from "https://esm.sh/d3-array@3"
 import {quantize} from "https://esm.sh/d3-interpolate@3"
 import {format} from "https://esm.sh/d3-format@3"
+import TWEEN from 'https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.esm.js'
 import {interpolateSpectral} from "https://esm.sh/d3-scale-chromatic@3"
 import {scaleOrdinal} from "https://esm.sh/d3-scale@4"
 import {pieData} from "../utils/dataMock.ts"
 export default function () {
   const svgRef = useRef(null)
-  const width = 600,height = 600
+  const width = 560,height = 560
   const innerRadius = 120, strokeWidth = 0,strokeLinejoin = "round"
   const  outerRadius = Math.min(width, height) / 2 - 60,
     labelRadius = (innerRadius * 0.4 + outerRadius * 0.6)
@@ -19,7 +20,6 @@ export default function () {
   const padAngle = stroke === "none" ? 1 / outerRadius : 0
   const N = pieData.map(e => e.age), V = pieData.map(e => e.amount)
   const I = range(N.length).filter(i => !isNaN(V[i]))
-
   const names = new InternSet(N)
   const colors = quantize(t => interpolateSpectral(t * 0.8 + 0.1), names.size)
   const color = scaleOrdinal(names, colors)
@@ -34,13 +34,18 @@ export default function () {
       .data(arcs).join("path").attr("fill", d => color(N[d.data]))
       .attr("d", makeArc(outerRadius))
       .on('mouseover',function (ev){
-        // console.log(ev)
-        select(this).attr("d", makeArc(outerRadius+30))
-      }).on('mouseleave', function () {
-        select(this).attr("d", makeArc(outerRadius))
+        new TWEEN.Tween({outerRadius}).to({outerRadius: outerRadius+30}, 175)
+        .onUpdate((obj) => {
+          select(this).attr("d", makeArc(obj.outerRadius))
+        }).start()
+      }).on('mouseout', function () {
+        new TWEEN.Tween({outerRadius: outerRadius+30}).to({outerRadius}, 125)
+        .onUpdate((obj) => {
+          select(this).attr("d", makeArc(obj.outerRadius))
+        }).start()
       })
     svg.append("g").attr("font-size", 14).attr("text-anchor", "middle")
-      .selectAll("text").data(arcs).join("text")
+    .selectAll("text").data(arcs).join("text").style('pointer-events', 'none')
       .attr("transform", d => `translate(${arcLabel.centroid(d)})`)
       .selectAll("tspan").data(d => {
         const lines = title(d.data).split(/\n/)
@@ -49,6 +54,11 @@ export default function () {
       .attr("font-weight", (_, i) => i ? null : "bold").text(d => d);
   }
   useEffect(() => {
+    function animate(time) {
+      requestAnimationFrame(animate)
+      TWEEN.update(time)
+    }
+    requestAnimationFrame(animate)
     drawPie()
   }, [])
   return (<div>
