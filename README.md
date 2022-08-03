@@ -10,4 +10,4 @@ deno task start
 
 This will watch the project directory and restart as necessary.
 
-(demo site)[https://liymax-fresh-app-demo.deno.dev/]
+[Demo site](https://liymax-fresh-app-demo.deno.dev/)
